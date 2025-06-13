@@ -10,11 +10,12 @@ from openai.error import (
 st.set_page_config(page_title="GPTモデル使用可否チェッカー", layout="centered")
 st.title("🤖 GPTモデル使用可否チェッカー")
 
-# APIキーの取得
+# OpenAI APIキーの取得
 if "OPENAI_API_KEY" not in st.secrets:
     st.error("❌ OPENAI_API_KEY が設定されていません。Streamlit CloudのSecretsに登録してください。")
     st.stop()
 
+# OpenAIクライアントを初期化
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # モデル名の入力欄
@@ -27,7 +28,7 @@ if st.button("このモデルが使えるかチェック"):
     else:
         with st.spinner(f"{model_name} をテスト中..."):
             try:
-                # ダミーリクエスト（実質的に0トークンしか使わない）
+                # 最小トークンでリクエストを送信して可否チェック
                 response = client.chat.completions.create(
                     model=model_name,
                     messages=[{"role": "user", "content": "Hello"}],
@@ -36,12 +37,12 @@ if st.button("このモデルが使えるかチェック"):
                 st.success(f"✅ モデル `{model_name}` はこのAPIキーで使用可能です！")
 
             except PermissionDeniedError as e:
-                st.error(f"🚫 PermissionDeniedError: `{model_name}` は使えません。\n\n{e}")
+                st.error(f"🚫 使用できません（Permission Denied）: {e}")
             except AuthenticationError as e:
                 st.error(f"🔑 APIキーが無効です: {e}")
             except NotFoundError as e:
-                st.error(f"❓ モデルが存在しない、あるいは入力ミスの可能性があります。\n\n{e}")
+                st.error(f"❓ モデルが見つかりません（スペルミスの可能性）: {e}")
             except BadRequestError as e:
-                st.warning(f"⚠ モデルは存在しますが、別の設定エラーがある可能性があります。\n\n{e}")
+                st.warning(f"⚠ モデルは存在しますが、構文やパラメータが不正な可能性があります: {e}")
             except Exception as e:
-                st.error(f"❗️ その他のエラー:\n\n{e}")
+                st.error(f"❗️ その他のエラーが発生しました: {e}")
